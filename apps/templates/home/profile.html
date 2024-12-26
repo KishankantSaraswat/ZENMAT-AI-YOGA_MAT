@@ -1,0 +1,580 @@
+{% extends 'layouts/base.html' %} {% block title %} Profile {% endblock title %}
+{% block head %} {{ super() }}
+<!-- This includes any head content from the base template -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+{% endblock %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f0f0f0;
+  }
+
+  .dashboard {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .chart-container,
+  .data-container {
+    background-color: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  h1,
+  h2 {
+    text-align: center;
+    color: #333;
+  }
+
+  #fsr-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  #fsr-data {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    text-align: center;
+  }
+
+  .fsr-item {
+    background-color: #e9e9e9;
+    padding: 10px;
+    border-radius: 5px;
+  }
+
+  .personal-data {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .personal-data div {
+    background-color: #e9e9e9;
+    padding: 10px;
+    border-radius: 5px;
+  }
+
+  #health-status {
+    grid-column: span 3;
+    text-align: center;
+    font-size: 1.2em;
+    font-weight: bold;
+    padding: 15px;
+    background-color: #e9e9e9;
+    border-radius: 5px;
+  }
+</style>
+{% endblock stylesheets %} {% block content %}
+
+<div class="container-fluid">
+  <div
+    class="page-header min-height-300 border-radius-xl mt-4"
+    style="background-image: url('{{ config.ASSETS_ROOT }}/img/curved-images/curved0.jpg'); background-position-y: 50%;"
+  >
+    <span class="mask bg-gradient-primary opacity-6"></span>
+  </div>
+  <div class="card card-body blur shadow-blur mx-4 mt-n6 overflow-hidden">
+    <div class="row gx-4">
+      <div class="col-auto my-auto">
+        <div class="h-100">
+          <h5 class="mb-1">{{ current_user.username }}</h5>
+          <p class="mb-0 font-weight-bold text-sm">{{ current_user.email }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid py-4">
+  <div class="row">
+    <div class="col-12 col-xl-8">
+      <div class="card h-auto mb-3">
+        <div class="card-header pb-0 p-3">
+          <div class="row">
+            <div class="col-md-8 d-flex align-items-center">
+              <h6 class="mb-0">Profile Information</h6>
+            </div>
+            <div class="col-md-4 text-end">
+              <a href="javascript:;">
+                <i
+                  class="fas fa-user-edit text-secondary text-sm"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  title="Edit Profile"
+                ></i>
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-3">
+          <div class="row">
+            <div class="col-md-3 col-6">
+              <ul class="list-group">
+                <li class="list-group-item border-0 ps-0 text-sm">
+                  <strong class="text-dark">Age:</strong> &nbsp;
+                  {{current_user.age}}
+                </li>
+              </ul>
+            </div>
+            <div class="col-md-3 col-6">
+              <ul class="list-group">
+                <li class="list-group-item border-0 ps-0 text-sm">
+                  <strong class="text-dark">Gender:</strong> &nbsp;
+                  {{current_user.gender}}
+                </li>
+              </ul>
+            </div>
+            <div class="col-md-3 col-6">
+              <ul class="list-group">
+                <li class="list-group-item border-0 ps-0 text-sm">
+                  <strong class="text-dark">Height:</strong> &nbsp;
+                  {{current_user.height}}
+                </li>
+              </ul>
+            </div>
+            <div class="col-md-3 col-6">
+              <ul class="list-group">
+                <li class="list-group-item border-0 ps-0 text-sm">
+                  <strong class="text-dark">Weight:</strong> &nbsp;
+                  {{current_user.weight}}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card h-auto mb-4">
+        <div class="card-header text-center">
+          Heart Rate (bpm)
+        </div>
+        <div class="card-body p-3">
+          <div class="chart-container">
+            <canvas id="heartRateChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-xl-4">
+      <div class="card h-auto">
+        <div class="card-body p-3">
+          <!-- <h6 class="text-uppercase text-body text-xs font-weight-bolder">Account</h6>
+              <ul class="list-group">
+                <li class="list-group-item border-0 px-0">
+                  <div class="form-check form-switch ps-0">
+                    <input class="form-check-input ms-auto" type="checkbox" id="flexSwitchCheckDefault" checked>
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="flexSwitchCheckDefault">Email me when someone follows me</label>
+                  </div>
+                </li>
+                <li class="list-group-item border-0 px-0">
+                  <div class="form-check form-switch ps-0">
+                    <input class="form-check-input ms-auto" type="checkbox" id="flexSwitchCheckDefault1">
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="flexSwitchCheckDefault1">Email me when someone answers on my post</label>
+                  </div>
+                </li>
+                <li class="list-group-item border-0 px-0">
+                  <div class="form-check form-switch ps-0">
+                    <input class="form-check-input ms-auto" type="checkbox" id="flexSwitchCheckDefault2" checked>
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="flexSwitchCheckDefault2">Email me when someone mentions me</label>
+                  </div>
+                </li>
+              </ul>
+              <h6 class="text-uppercase text-body text-xs font-weight-bolder mt-4">Application</h6>
+              <ul class="list-group">
+                <li class="list-group-item border-0 px-0">
+                  <div class="form-check form-switch ps-0">
+                    <input class="form-check-input ms-auto" type="checkbox" id="flexSwitchCheckDefault3">
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="flexSwitchCheckDefault3">New launches and projects</label>
+                  </div>
+                </li>
+                <li class="list-group-item border-0 px-0">
+                  <div class="form-check form-switch ps-0">
+                    <input class="form-check-input ms-auto" type="checkbox" id="flexSwitchCheckDefault4" checked>
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="flexSwitchCheckDefault4">Monthly product updates</label>
+                  </div>
+                </li>
+                <li class="list-group-item border-0 px-0 pb-0">
+                  <div class="form-check form-switch ps-0">
+                    <input class="form-check-input ms-auto" type="checkbox" id="flexSwitchCheckDefault5">
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="flexSwitchCheckDefault5">Subscribe to newsletter</label>
+                  </div>
+                </li>
+              </ul> -->
+
+          <div class="chart-container">
+            <canvas id="bmi"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-xl-8">
+      <div class="card h-1/2 mb-4">
+        <div class="card-header text-center">
+          Co2 Levels
+        </div>
+        <div class="card-body p-3">
+          <div class="chart-container h-auto">
+            <canvas id="co2"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-xl-4 mt-3">
+      <div class="card h-auto">
+        <!-- <div class="card-header pb-0 p-3">
+          FSR Data
+        </div> -->
+        <div class="card-body p-3">
+          <!-- <div class="chart-container d-flex flex-column" id="fsr-container">
+            <div class="row">
+              <div id="fsr-data" class="col-12 d-flex flex-column ">
+                FSR data elements will be inserted here
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-12 mt-3">
+                <canvas id="fsrAverageChart"></canvas>
+              </div>
+            </div>
+          </div> -->
+          <div class="chart-container">
+            <canvas id="calories"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 mt-3">
+      <div class="card h-auto mb-4">
+        <div class="card-header text-center">
+          Last Session Yoga Poses Report
+        </div>
+        <div class="card-body px-3 pb-2">
+          <div class="table-responsive">
+            <table class="table align-items-center mb-0">
+              <thead>
+                <tr>
+                  <th
+                    class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"
+                  >
+                    Yoga Aasanas that you performed
+                  </th>
+                  <th
+                    class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"
+                  >
+                    Avg. Heart Rate
+                  </th>
+                  <th
+                    class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"
+                  >
+                    Total Calories Burnt
+                  </th>
+                  <th
+                    class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"
+                  >
+                    Total Time taken (Minutes.Seconds)
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for pose in poses_data %}
+                <tr>
+                  <td>{{ pose.pose_name }}</td>
+                  <td class="text-center">{{ pose.avg_heart_rate or 'N/A' }} bpm</td>
+                  <td class="text-center">{{ pose.calories_burned }} cal</td>
+                  <td class="text-center">
+                    {{ pose.time_spent }}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    
+
+    <div class="col-12">
+      <div class="card h-auto">
+        <div class="card-header pb-0 p-3">Health Report</div>
+        <div class="card-body p-3">
+          <div id="health-status"></div>
+          <div class="p-3 text-center">
+            <button id="download-pdf" class="btn btn-primary m-0">
+              Download Report as PDF
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include "includes/footer.html" %}
+</div>
+
+{% endblock content %}
+
+<!-- Specific JS goes HERE -->
+{% block javascripts %}
+<script src="{{ config.ASSETS_ROOT }}/js/plugins/chartjs.min.js"></script>
+
+<script type="text/javascript">
+    // Initialize charts
+const maxDataPoints = 50;
+const charts = {
+  bmi: createGaugeChart('bmi', 'BMI', [15, 35]),
+  calories: createGaugeChart('calories', 'Calories', [0, 1000])
+};
+
+// Chart creation functions
+function createGaugeChart(id, label, range) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return null;
+  
+  return new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [0, 100],
+        backgroundColor: ['#36a2eb', '#eee']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      circumference: 180,
+      rotation: -90,
+      cutout: '80%',
+      plugins: {
+        title: { display: true, text: label },
+        legend: { display: false }
+      },
+      tooltips: { enabled: false }
+    }
+  });
+}
+
+function createLineChart(id, label, range) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return null;
+
+  return new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: label,
+        data: [],
+        borderColor: '#36a2eb',
+        tension: 0.1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          min: range[0],
+          max: range[1],
+          title: {
+            display: true,
+            text: label
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Time'
+          }
+        }
+      }
+    }
+  });
+}
+
+// Update chart function
+function updateChart(chart, value, label) {
+  if (!chart) return;
+
+  if (chart.config.type === 'doughnut') {
+    const normalizedValue = ((value - 15) / (35 - 15)) * 100;
+    chart.data.datasets[0].data = [normalizedValue, 100 - normalizedValue];
+    chart.options.plugins.title.text = `${label}: ${value.toFixed(2)}`;
+
+    if(label === 'BMI') {
+      if (value < 17) {
+        chart.data.datasets[0].backgroundColor[0] = '#e74c3c';  // Red
+      } else if (value < 18.5) {
+        chart.data.datasets[0].backgroundColor[0] = '#f1c40f';  // Yellow
+      } else if (value < 25) {
+        chart.data.datasets[0].backgroundColor[0] = '#2ecc71';  // Green
+      } else if (value < 30) {
+        chart.data.datasets[0].backgroundColor[0] = '#f1c40f';  // Yellow
+      } else {
+        chart.data.datasets[0].backgroundColor[0] = '#e74c3c';  // Red
+      }
+    } else {
+      chart.data.datasets[0].backgroundColor[0] = '#3498db';  // Blue
+    }
+  } else {
+    chart.data.labels.push(label);
+    chart.data.datasets[0].data.push(value);
+    if (chart.data.labels.length > maxDataPoints) {
+      chart.data.labels.shift();
+      chart.data.datasets[0].data.shift();
+    }
+  }
+  chart.update();
+}
+
+// Initialize CO2 Chart
+const co2Chart = createLineChart('co2', 'CO2 Concentration (ppm)', [390, 460]);
+if (co2Chart) {
+  // Generate initial CO2 data
+  const co2Data = Array.from({length: 20}, () => {
+    const average = Math.floor(Math.random() * 100) + 400;
+    const variation = Math.random() * 20 - 10;
+    return Math.round((average + variation) * 100) / 100;
+  });
+  
+  co2Chart.data.labels = Array.from({length: co2Data.length}, (_, i) => i + 1);
+  co2Chart.data.datasets[0].data = co2Data;
+  co2Chart.update();
+}
+
+// Initialize Heart Rate Chart
+const heartRateChart = createLineChart('heartRateChart', 'Heart Rate (bpm)', [40, 200]);
+if (heartRateChart) {
+  // Set initial heart rate data if available
+  const initialHeartRateData = Array.from({length: 20}, () => 
+    Math.floor(Math.random() * (100 - 60) + 60)
+  );
+  
+  heartRateChart.data.labels = Array.from({length: initialHeartRateData.length}, (_, i) => i + 1);
+  heartRateChart.data.datasets[0].data = initialHeartRateData;
+  heartRateChart.update();
+}
+
+// Health status evaluation
+function evaluateHealthStatus(data) {
+  const healthStatus = document.getElementById('health-status');
+  if (!healthStatus) return;
+
+  let status = "Your health status is: ";
+  let issues = [];
+
+  if (data.bmi < 18.5 || data.bmi > 25) issues.push("BMI out of normal range");
+  if (data.heartRate < 60 || data.heartRate > 100) issues.push("Heart rate out of normal range");
+  if (data.co2Levels > 1000) issues.push("High CO2 levels");
+
+  status += issues.length === 0 
+    ? "Good. All metrics are within normal ranges."
+    : "Needs attention. " + issues.join(", ") + ".";
+
+  healthStatus.textContent = status;
+}
+
+// WebSocket connection for real-time updates
+const socket = new WebSocket('ws://localhost:8765');
+
+socket.onopen = () => console.log('WebSocket Connected');
+socket.onerror = (error) => console.error('WebSocket Error:', error);
+socket.onclose = () => console.log('WebSocket Disconnected');
+
+socket.onmessage = function(event) {
+  try {
+    const data = JSON.parse(event.data);
+    
+    // Update BMI
+    const weightData = parseFloat(data.weight) || 0;
+    const heightData = parseFloat(data.height) || 1;
+    const bmi = weightData / (heightData ** 2);
+    updateChart(charts.bmi, bmi, 'BMI');
+
+    // Update other metrics
+    updateChart(charts.calories, data.calories || 0, 'Calories');
+    
+    // Update real-time charts
+    if (heartRateChart && data.heartRate) {
+      updateChart(heartRateChart, data.heartRate, new Date().toLocaleTimeString());
+    }
+    
+    if (co2Chart && data.co2Levels) {
+      updateChart(co2Chart, data.co2Levels, new Date().toLocaleTimeString());
+    }
+
+    // Evaluate health status
+    evaluateHealthStatus({
+      bmi,
+      heartRate: data.heartRate,
+      co2Levels: data.co2Levels
+    });
+  } catch (error) {
+    console.error('Error processing WebSocket data:', error);
+  }
+};
+
+// PDF Generation
+document.getElementById('download-pdf')?.addEventListener('click', function() {
+  try {
+    const { jsPDF } = window.jspdf;
+    if (!jsPDF) {
+      console.error('jsPDF not loaded');
+      return;
+    }
+
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    html2canvas(document.body).then(canvas => {
+      try {
+        const imgData = canvas.toDataURL('image/png');
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const pdfAspectRatio = pdfHeight / pdfWidth;
+        const imgAspectRatio = imgProps.height / imgProps.width;
+        
+        let renderWidth = pdfWidth;
+        let renderHeight = renderWidth * imgAspectRatio;
+
+        if (renderHeight > pdfHeight) {
+          renderHeight = pdfHeight;
+          renderWidth = renderHeight / imgAspectRatio;
+        }
+
+        const renderX = (pdfWidth - renderWidth) / 2;
+        const renderY = (pdfHeight - renderHeight) / 2;
+
+        pdf.addImage(imgData, 'PNG', renderX, renderY, renderWidth, renderHeight);
+        pdf.save('health_metrics_report.pdf');
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Error generating PDF. Please try again.');
+      }
+    }).catch(error => {
+      console.error('Error capturing page:', error);
+      alert('Error capturing page content. Please try again.');
+    });
+  } catch (error) {
+    console.error('Error initializing PDF generation:', error);
+    alert('Error initializing PDF generation. Please try again.');
+  }
+});
+</script> 
+{% endblock javascripts %}

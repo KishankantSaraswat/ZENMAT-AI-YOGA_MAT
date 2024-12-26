@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Layout</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+            padding: 20px;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 50%;
+        }
+
+        .right-column {
+            width: 50%;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            border: 2px solid #333;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .small-card {
+            height: calc(50vh - 30px);
+        }
+
+        .big-card {
+            height: calc(100vh - 40px);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .left-column, .right-column {
+                width: 100%;
+            }
+
+            .small-card {
+                height: 200px;
+            }
+
+            .big-card {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-column">
+            <div class="card small-card">
+                <h2>Card 1</h2>
+                <p>Small card content</p>
+            </div>
+            <div class="card small-card">
+                <h2>Card 2</h2>
+                <p>Small card content</p>
+            </div>
+        </div>
+        <div class="right-column">
+            <div class="card big-card">
+                <h2>Card 3</h2>
+                <p>Big card content</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

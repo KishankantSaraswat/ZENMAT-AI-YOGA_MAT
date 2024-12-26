@@ -1,0 +1,303 @@
+{% extends 'layouts/base.html' %} 
+{% block title %} Video Interface {% endblock title %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}
+<style>
+  .outer-rectangle {
+    border: 2px solid blue;
+    padding: 15px;
+  }
+
+  .circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid blue;
+  }
+
+  .oval {
+    width: 100px;
+    height: 50px;
+    border-radius: 50px;
+    border: 2px solid blue;
+    margin: 10px auto;
+  }
+  
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+  }
+
+  .modal-content {
+    background-color: white;
+    margin: 10% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 50%;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+  }
+
+  .close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .close:hover,
+  .close:focus {
+    color: black;
+    text-decoration: none;
+  }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row">
+    <!-- Left Side -->
+    <div class="col-lg-2">
+      <div class="card h-auto">
+        <!-- Timer Section -->
+        <div class="px-3 py-2">
+          <div class="d-flex align-items-center gap-2">
+            <h6 class="mb-0">Timer</h6>
+            <i class="fa-solid fa-stopwatch"></i>
+          </div>
+          <span class="h3 text-success fw-bold" id="timer">00:00</span>
+        </div>
+
+        <!-- Calories Section -->
+        <div class="px-3 py-2">
+          <div class="d-flex align-items-center gap-2">
+            <h6 class="mb-0">Calories</h6>
+            <i class="fa-solid fa-fire"></i>
+          </div>
+          <span class="h3 text-warning fw-bold" id="calories-burned">0</span>
+        </div>
+
+        <!-- Heart Rate Section -->
+        <div class="px-3 py-2">
+          <div class="d-flex align-items-center gap-2">
+            <h6 class="mb-0">Heart rate</h6>
+            <i class="fa-solid fa-heartbeat"></i>
+          </div>
+          <span class="h3 text-danger fw-bold" id="bpm">0 bpm</span>
+        </div>
+      </div>
+
+      <!-- Shapes Section -->
+      <div class="card text-center mt-3">
+        <div class="d-flex justify-content-center align-items-center p-3">
+          <div class="outer-rectangle">
+            <div class="d-flex justify-content-between gap-2">
+              <div id="circle-left-hand" class="circle"></div>
+              <div id="circle-right-hand" class="circle"></div>
+            </div>
+            <div id="base" class="oval"></div>
+            <div class="d-flex justify-content-between gap-2">
+              <div id="circle-left-foot" class="circle"></div>
+              <div id="circle-right-foot" class="circle"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card text-center mt-3">
+        <div class="p-3">
+          <button id="stopButton" class="btn btn-secondary w-100 m-0">Stop</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Side -->
+    <div class="col-lg-10">
+      <div class="row h-100">
+        <!-- First Card -->
+        <div class="col-md-6 mb-4">
+          <div class="card h-100">
+            <div class="p-4 text-center">
+              <h6>{{ pose.name }}</h6>
+              {% if pose.pose_key != 'default' %}
+              <img
+                class="w-75"
+                src="{{ config.ASSETS_ROOT }}/img/yoga_poses/{{ pose.pose_key }}.jpg"
+                alt="{{ pose.name }}"
+              />
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Second Card -->
+        <div class="col-md-6 mb-4">
+          <div class="card h-100 d-flex justify-content-center align-items-center">
+            <div class="p-4">
+              <h6 id="reps-data">Reps : 0</h6>
+              
+            </div>
+          </div>
+        </div>
+
+        <!-- Output Section -->
+        <div class="col-md-12">
+          <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center">
+              <h6 class="mb-0">Output</h6>
+              <div id="feedback">data</div>
+              
+              <a
+                href="#"
+                class="btn btn-secondary"
+              >
+                {% if pose.is_last_pose %} Done {% else %} Next {% endif %}
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="stopModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h3>Confirmation</h3>
+      <p>Are you sure you want to stop the video? Here's a summary:</p>
+      <ul>
+        <li>Time Elapsed: <span id="elapsedTime">00:00</span></li>
+        <li>Calories Burned: <span id="caloriesBurned">0</span></li>
+        <li>Heart Rate: <span id="heartRate">0 bpm</span></li>
+      </ul>
+      <button class="btn btn-secondary w-100 m-0" id="stopButton2">Stop</button>
+    </div>
+  </div>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+let startTime = Date.now();
+let pausedTime = 0;
+let timerInterval;
+let caloriesBurned = 0;
+
+const posekey = "{{ pose.pose_key }}";
+const met = {
+    "Cobra": 2.5,
+    "Chair": 3.5,
+    "Tree": 2.5
+};
+
+const MET = met[posekey] || 2.5; // Default MET value if pose not found
+const weightdata = {{ current_user.weight|default(70)|safe }};
+
+function updateFeedback() {
+    fetch('/get_text')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('feedback').innerText = data.text;
+        })
+        .catch(error => console.error('Error updating feedback:', error));
+}
+
+function updateReps() {
+    fetch('/get_reps')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('reps-data').innerText = `Reps : ${data.text}`;
+        })
+        .catch(error => console.error('Error updating reps:', error));
+}
+
+function getBPM() {
+    fetch('http://192.168.83.97:5000/view-data')
+        .then(response => response.json())
+        .then(data => {
+            const bpm = data["bpm"];
+            const timestamp = new Date();
+            saveBPM(bpm, timestamp, posekey);
+            document.getElementById('bpm').innerText = `${bpm} bpm`;
+        })
+        .catch(error => console.error('Error getting BPM:', error));
+}
+
+function saveBPM(bpm, timestamp, posekey) {
+    fetch('/save-bpm', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ bpm, timestamp, posekey })
+    })
+    .catch(error => console.error('Error saving BPM:', error));
+}
+
+function startTimer() {
+    startTime = Date.now() - pausedTime;
+    timerInterval = setInterval(() => {
+        const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(elapsedTime / 60).toString().padStart(2, '0');
+        const seconds = (elapsedTime % 60).toString().padStart(2, '0');
+        document.getElementById('timer').innerText = `${minutes}:${seconds}`;
+
+        // Calculate calories burned
+        const durationInHours = elapsedTime / 3600;
+        caloriesBurned = MET * weightdata * durationInHours;
+        document.getElementById('calories-burned').innerText = Math.round(caloriesBurned);
+    }, 1000);
+}
+
+function stopTimer() {
+    clearInterval(timerInterval);
+    pausedTime = Date.now() - startTime;
+}
+
+function setLed(status) {
+    fetch('/set_led/' + status)
+        .then(response => response.json())
+        .catch(error => console.error('Error setting LED:', error));
+}
+
+// Modal handling
+const modal = document.getElementById("stopModal");
+const btn = document.getElementById("stopButton");
+const span = document.getElementsByClassName("close")[0];
+// const stopButton2 = document.getElementById("stopButton2");
+
+btn.onclick = function() {
+    document.getElementById('elapsedTime').innerText = document.getElementById('timer').innerText;
+    document.getElementById('caloriesBurned').innerText = document.getElementById('calories-burned').innerText;
+    document.getElementById('heartRate').innerText = document.getElementById('bpm').innerText;
+    modal.style.display = "block";
+}
+
+span.onclick = function() {
+    modal.style.display = "none";
+}
+
+window.onclick = function(event) {
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
+}
+
+ Start the timers and updates
+startTimer();
+setInterval(updateFeedback, 1000);
+setInterval(getBPM, 1000);
+setInterval(updateReps, 1000);
+
+</script>
+{% endblock javascripts %}
