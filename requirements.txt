@@ -85,6 +85,8 @@ python-dateutil==2.9.0.post0
 python-dotenv==0.19.2
 pyttsx3==2.98
 pytz==2024.2
+# Add this conditionally only for Windows
+pypiwin32==223; platform_system == "Windows"
 
 PyYAML==6.0.2
 rcssmin==1.1.3
