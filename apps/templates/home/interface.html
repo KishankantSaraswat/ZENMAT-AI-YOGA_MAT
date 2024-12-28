@@ -4,6 +4,19 @@
 <!-- Specific CSS goes HERE -->
 {% block stylesheets %}
 <style>
+
+.video-container {
+    width: 100%;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  
+  .video-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
   .outer-rectangle {
     border: 2px solid blue;
     padding: 15px;
@@ -141,14 +154,19 @@
 
         <!-- Second Card -->
         <div class="col-md-6 mb-4">
-          <div class="card h-100 d-flex justify-content-center align-items-center">
-            <div class="p-4">
-              <h6 id="reps-data">Reps : 0</h6>
-              
-            </div>
-          </div>
-        </div>
-
+  <div class="card h-100">
+    <div class="card-body p-4">
+      <h6 id="reps-data" class="mb-3">Reps: 0</h6>
+      <div class="video-container">
+        <img
+  src="{{ url_for('video_feed_blueprint.video_feed', target='chair') }}"
+  class="img-fluid"
+  alt="Yoga Pose Video Feed"
+/>
+      </div>
+    </div>
+  </div>
+</div>
         <!-- Output Section -->
         <div class="col-md-12">
           <div class="card p-4">
@@ -293,7 +311,7 @@ window.onclick = function(event) {
     }
 }
 
- Start the timers and updates
+//  Start the timers and updates
 startTimer();
 setInterval(updateFeedback, 1000);
 setInterval(getBPM, 1000);
